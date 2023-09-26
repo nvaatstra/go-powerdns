@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -76,17 +77,20 @@ func parseBaseURL(baseURL string) (string, string, string, error) {
 	if err != nil {
 		return "", "", "", err
 	}
-	hp := strings.Split(u.Host, ":")
-	hostname := hp[0]
-	var port string
-	if len(hp) > 1 {
-		port = hp[1]
-	} else {
+
+	port := u.Port()
+	if port == "" {
 		if u.Scheme == "https" {
 			port = "443"
 		} else {
 			port = "80"
 		}
+	}
+
+	// Special handling of IPv6 IP (add brackets)
+	hostname := u.Hostname()
+	if net.ParseIP(hostname) != nil && strings.Contains(hostname, ":") {
+		hostname = fmt.Sprintf("[%s]", hostname)
 	}
 
 	return u.Scheme, hostname, port, nil
